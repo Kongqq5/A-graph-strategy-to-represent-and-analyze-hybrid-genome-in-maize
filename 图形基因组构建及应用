@@ -1,0 +1,47 @@
+##根据基因组间变异构建图形基因组
+#bgzip 1016.all.meth.vcf && echo "---bgzip done---" &&
+#tabix -p vcf 1016.all.meth.vcf.gz && echo "---vcf.gz index done---" &&
+#vg construct -t 2 -r ./ragtag.scaffold.fasta -v ./1016.all.meth.vcf.gz -S -a -f > ./1016.all.meth.vcf.gz.vg 2> ./1016.all.meth.vcf.log && echo "--vg construct done--"
+#vg construct -r ./ragtag.scaffold.fasta -v ./1016.all.meth.vcf.gz > ./1016.all.meth.vcf.gz.vg 2> ./1016.all.meth.vcf.log && echo "--vg construct don
+#vg stats -z -N -E -A ./1016.all.meth.vcf.gz.vg > 1016.all.meth.vcf.gz.vg.stats
+#vg construct -r ./ragtag.scaffold.fasta -v ./1016.all.meth.vcf.gz -S -a -f > ./1018.saf.all.meth.vcf.gz.vg 2> ./1018.saf.all.meth.vcf.gz.log && echo "--vg construct done--"
+#vg construct -r ./ragtag.scaffold.fasta -v ./1016.all.meth.vcf.gz -S -a -f > ./1018.all.meth.vcf.gz.vg 2> ./1018.all.meth.vcf.gz.log && echo "--vg construct done--" &&
+vg stats -z -N -E -A ./1018.all.meth.vcf.gz.vg > 1018.all.meth.vcf.gz.vg.stats
+
+##将二代reads比对至图形基因组并鉴定变异
+1构建索引
+vg convert ./1016.snp.indel.sv.ht.vcf.gz.vg -p > ./1016.tyhap2_hap1.pg 2> convert.log && echo "--convert pg done--" &&
+vg view ./1016.snp.indel.sv.ht.vcf.gz.vg > ./1016.tyhap2_hap1.gfa && echo "--vg gbwt done--" &&
+vg gbwt -o 1016.tyhap2_hap1.gbwt -g 1016.tyhap2_hap1.gg -G 1016.tyhap2_hap1.gfa 2> gbwt.log && echo "gbwt done" &&
+vg convert -x -b 1016.tyhap2_hap1.gbwt 1016.tyhap2_hap1.gg > 1016.tyhap2_hap1.xg && echo "--vg convert xg done--" &&
+vg snarls -T 1016.tyhap2_hap1.xg > 1016.tyhap2_hap1_1.snarls && echo "--vg snarls done--" &&
+vg index -t 60 1016.tyhap2_hap1.xg -s 1016.tyhap2_hap1_1.snarls -j 1016.tyhap2_hap1_1.dist && echo "--vg index done--"
+vg autoindex --workflow giraffe -g 1016.snp.indel.sv.ht.vcf.gz.gfa -p 1016.snp.indel.sv 2> autoindex.log && echo "--autoindex done--"
+
+2比对
+vg giraffe -t 96 -f SRR11302060_1.fp.fastq.gz -f SRR11302060_2.fp.fastq.gz -Z ../1018.snp.indel.sv.giraffe.gbz -m ../1018.snp.indel.sv.min -d ../1018.snp.indel.sv.dist > 1021.tyhap1_2.oh43.reads.gam 2> 1021.tyhap1_2.giraffe.log && echo "--vg giraffe done--" &&
+vg stats -a 1021.tyhap1_2.oh43.reads.gam > 1021.tyhap1_2.oh43.reads.gam.readnum 2> 1021.tyhap1_2.stats.log && echo "--stats done--"
+
+3基于图形基因组鉴定变异
+vg augment -t 96 ../1018.snp.indel.sv.pg 1021.tyhap1_2.oh43.reads.gam -m 4 -q 5 -Q 20 -A 1021.tyhap1_hap2.aug.gam > 1021.tyhap1_hap2.aug.pg 2> 1021.tyhap1_hap2.augment.log && echo "--augment done--" &&
+vg snarls -t 96 1021.tyhap1_hap2.aug.pg > 1021.tyhap1_hap2.aug.snarls 2> 1021.tyhap1_hap2.snarls.log && echo "--snarls done--" &&
+vg pack -t 96 -x 1021.tyhap1_hap2.aug.pg -g 1021.tyhap1_hap2.aug.gam -o 1021.tyhap1_hap2.aug.pack 2> 1021.tyhap1_hap2.pack.log && echo "--pack done--" &&
+vg call -t 96 1021.tyhap1_hap2.aug.pg -r 1021.tyhap1_hap2.aug.snarls -k 1021.tyhap1_hap2.aug.pack > 1021.tyhap1_hap2.aug.calls.vcf 2> 1021.tyhap1_hap2.call.log && echo "--call done--"
+
+##转录组分析
+1泛转录组的构建
+vg rna  -s ID --feature-type gene -p -t 96 -n ./hap1.final_annotation.rename1.gff -n ./final_annotation.rename1.gff -r -u -b pantranscriptome.gbwt -i pantranscriptome.txt ./smoothxg.aln.pg > gene.spliced_graph.pg 2> gene.rna.log && echo "--vg rna done--"
+
+2比对
+#Get .gcsa index
+#vg mod -t 72 -X 256  hap2.spliced_graph.pg > hap2.spliced_graph.mod.pg &&
+#	vg prune -t 72 hap2.spliced_graph.mod.pg > hap2.spliced_graph.mod.pruned.pg 2> 1prune.log && echo "--prune done--" &&
+	vg index -Z 204800 -b gcsa.tpm -t 72 -p -g hap2.spliced_graph.mod.gcsa hap2.spliced_graph.mod.pruned.pg 2> 1gcsa.log && echo "--prune gcsa done--"
+#vg index -t 96 -p -g ocds.splited_graph.mod.gcsa ocds.splited_graph.mod.pg 2> 1.1gcsa.log && echo "mod gcsa done" &&
+#Get distance and .xg 
+#vg index -b hap1 -t 96 -x hap2.spliced_graph.mod.xg hap2.spliced_graph.mod.pg 2> 1index.log && echo "--index done--" &&
+#vg snarls -t 96 -T hap2.spliced_graph.mod.xg > hap2.spliced_graph.mod.snarls 2> 1snarls.log && echo "--snarls done--" &&
+#vg index -b hap1 -t 96 -x hap2.spliced_graph.mod.xg -s hap2.spliced_graph.mod.snarls -j hap2.spliced_graph.mod.dist 2> 1snarls.index.log && echo "--snarls.index done--" &&
+#vg mpmap -t 96 -n rna -x hap2.spliced_graph.mod.xg -g hap2.spliced_graph.mod.gcsa -d hap2.spliced_graph.mod.dist -f ../seed/SRR397771.1.clean.gz -f ../seed/SRR397771.2.clean.gz > ./ocds.7771.gamp  2> 1mpmap.log && echo "vg mpmap done"
+
+3.rpvg差异表达分析
