@@ -1,0 +1,26 @@
+##nucmer基因组比对
+#nucmer -t 30 -l 100 -c 500 /data3/kongqq/B73_Mo17.hifiasm_data/typical_hifiasm/B73_Mo17.asm.bp.hap2.p_ctg.fasta /data3/kongqq/B73_Mo17.hifiasm_data/typical_hifiasm/B73_Mo17.asm.bp.hap1.p_ctg.fasta -p tyhap1_hap2
+#dnadiff -d tyhap1_hap2.delta -p tyhap1_hap2_dnadiff
+#/data13/kongqq/software/all2vcf/all2vcf mummer --type SNP --snps tyhap1_hap2_dnadiff.snps --reference /data3/kongqq/B73_Mo17.hifiasm_data/typical_hifiasm/B73_Mo17.asm.bp.hap2.p_ctg.fasta > ./tyhap1_hap2_dnadiff.snps.vcf
+/data13/kongqq/software/all2vcf/all2vcf mummer --type INDEL --snps tyhap1_hap2_dnadiff.snps --reference /data3/kongqq/B73_Mo17.hifiasm_data/typical_hifiasm/B73_Mo17.asm.bp.hap2.p_ctg.fasta > ./tyhap1_hap2_dnadiff.indel.vcf
+#nucmer -l 100 -c 500 /data3/kongqq/B73_Mo17.hifiasm_data/typical_hifiasm/B73_Mo17.asm.bp.hap1.p_ctg.fasta /data3/kongqq/B73_Mo17.hifiasm_data/typical_hifiasm/B73_Mo17.asm.bp.hap2.p_ctg.fasta -p tyhap2_hap1 &&
+#	dnadiff -d tyhap2_hap1.delta -p tyhap2_hap1_dnadiff
+
+##基因组间存在缺失变异PAV
+perl ./split_chr2bin.pl ../B73_Mo17.asm.bp.hap1.p_ctg.fasta 500 100 ./PAV_split_tyhap1.fa &&
+	bwa index ../B73_Mo17.asm.bp.hap2.p_ctg.fasta -p ../tyhap2_index &&
+	bwa mem -t 25 -w 500 -M ../tyhap2_index ./PAV_split_tyhap1.fa | samtools view -b -o ./PAV_split_hap1.bwa_mem.hap2.bam &&
+	samtools view -f 4 PAV_split_hap1.bwa_mem.hap2.bam | awk '{print $1}' > hap1_chr_coords.txt &&
+	cat hap1_chr_coords.txt | awk -F ':' '{print $1}' > hap1chr.txt &&
+	cat hap1_chr_coords.txt | awk -F ':' '{print $2}' | awk -F '-' '{print $1}' > hap1coords1.txt &&
+	cat hap1_chr_coords.txt | awk -F ':' '{print $2}' | awk -F '-' '{print $2}' > hap1coords2.txt &&
+	paste hap1chr.txt hap1coords1.txt hap1coords2.txt > hap1wait_sort.bed &&
+	bedtools sort -i hap1wait_sort.bed > hap1sorted.bed &&
+	bedtools merge -i hap1sorted.bed > hap1_PAV.txt &&
+	python3 pav_id_jianyi.py hap1_PAV.txt &&
+	python3 length.py hap1_PAV.txt.jianyi.txt > hap1_PAV_length.txt &&
+	less -S hap1_PAV_length.txt |cut -f 2 |awk '{sum+=$1}END{print sum}' >> b73_PAV2_length.txt
+
+
+##鉴定变异影响的基因
+
