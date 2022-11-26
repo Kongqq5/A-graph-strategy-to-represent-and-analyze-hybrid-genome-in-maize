@@ -1,0 +1,23 @@
+##hifiasm 对基因组组装
+hifiasm -o B73_Mo17.asm -t 48 /data13/kongqq/b73_mo17.hifi_data/whfs-xs-210390_DNA_PacBio/B73_X_Mo17_F1/2.HiFi/total.fastq
+
+##EDTA注释
+perl /home/kongqq/miniconda3/envs/EDTA/bin/EDTA.pl -genome ./B73_Mo17.asm.bp.hap1.p_ctg.fa -step all -species Maize --anno 1 --evaluate 0 -t 40
+perl /home/kongqq/miniconda3/envs/EDTA/bin/EDTA.pl -genome ./B73_Mo17.asm.bp.hap2.p_ctg.fa -step all -species Maize --anno 1 --evaluate 0 -t 40
+
+##基因区完整度评估BUSCO
+busco -m geno -i ../B73_Mo17.asm.bp.hap1.p_ctg.fa -l /data2/kongqianqian/arabidopsis.SRA.abyss/embryophyta_odb10 -o hap1.p_ctg  -c 20 --offline
+busco -m geno -i ../B73_Mo17.asm.bp.hap2.p_ctg.fa -l /data2/kongqianqian/arabidopsis.SRA.abyss/embryophyta_odb10 -o hap2.p_ctg  -c 20 --offline
+
+##非基因区完整度评估LAI
+/data13/kongqq/software/gt-1.6.2-Linux_x86_64-64bit-complete/bin/gt suffixerator -db ../B73_Mo17.asm.bp.hap2.p_ctg.fa -indexname ./B73_Mo17.asm.bp.hap2.p_ctg.fa -tis -suf -lcp -des -ssp -sds -dna && 
+/data13/kongqq/software/gt-1.6.2-Linux_x86_64-64bit-complete/bin/gt ltrharvest -index ./B73_Mo17.asm.bp.hap2.p_ctg.fa -minlenltr 100 -maxlenltr 7000 -mintsd 4 -maxtsd 6 -motif TGCA -motifmis 1 -similar 85 -vic 10 -seed 20 -seqids yes > ./B73_Mo17.asm.bp.hap2.p_ctg.fa.harvest.scn &&
+perl /data13/kongqq/software/LTR_FINDER_parallel-1.1/LTR_FINDER_parallel -seq ../B73_Mo17.asm.bp.hap2.p_ctg.fa -threads 20 -harvest_out -size 1000000 -time 300
+cat B73_Mo17.asm.bp.hap2.p_ctg.fa.harvest.scn B73_Mo17.asm.bp.hap2.p_ctg.fa.finder.combine.scn > B73_Mo17.asm.bp.hap2.p_ctg.fa.rawLTR.scn
+/data3/kongqq/B73_Mo17.hifiasm_data/s0.5typical_hifiasm/LTR_retriever/LTR_retriever -threads 30 -genome ../B73_Mo17.asm.bp.hap2.p_ctg.fa -inharvest ./B73_Mo17.asm.bp.hap2.p_ctg.fa.rawLTR.scn
+/data13/kongqq/software/LTR_retriever/LAI -genome ./B73_Mo17.asm.bp.hap2.p_ctg.fa -intact ./B73_Mo17.asm.bp.hap2.p_ctg.fa.pass.list -all ./B73_Mo17.asm.bp.hap2.p_ctg.fa.out
+
+##基因组质量评估merqury
+#$MERQURY/merqury.sh read-db.meryl mat.meryl pat.meryl asm1.fasta asm2.fasta out_prefix
+$MERQURY/merqury.sh /data13/kongqq/b73_mo17.hifi_data/whfs-xs-210390_DNA_PacBio/B73_X_Mo17_F1/2.HiFi/hifiasm/trio_bining/merqury/read.meryl /data13/kongqq/b73_mo17.hifi_data/whfs-xs-210390_DNA_PacBio/B73_X_Mo17_F1/2.HiFi/hifiasm/trio_bining/merqury/B73.hapmer.meryl /data13/kongqq/b73_mo17.hifi_data/whfs-xs-210390_DNA_PacBio/B73_X_Mo17_F1/2.HiFi/hifiasm/trio_bining/merqury/Mo17.hapmer.meryl ../B73_Mo17.asm.bp.hap1.p_ctg.fasta ../B73_Mo17.asm.bp.hap2.p_ctg.fasta BM
+
