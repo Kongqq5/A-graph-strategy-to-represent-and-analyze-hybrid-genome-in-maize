@@ -21,3 +21,6 @@ cat B73_Mo17.asm.bp.hap2.p_ctg.fa.harvest.scn B73_Mo17.asm.bp.hap2.p_ctg.fa.find
 #$MERQURY/merqury.sh read-db.meryl mat.meryl pat.meryl asm1.fasta asm2.fasta out_prefix
 $MERQURY/merqury.sh /data13/kongqq/b73_mo17.hifi_data/whfs-xs-210390_DNA_PacBio/B73_X_Mo17_F1/2.HiFi/hifiasm/trio_bining/merqury/read.meryl /data13/kongqq/b73_mo17.hifi_data/whfs-xs-210390_DNA_PacBio/B73_X_Mo17_F1/2.HiFi/hifiasm/trio_bining/merqury/B73.hapmer.meryl /data13/kongqq/b73_mo17.hifi_data/whfs-xs-210390_DNA_PacBio/B73_X_Mo17_F1/2.HiFi/hifiasm/trio_bining/merqury/Mo17.hapmer.meryl ../B73_Mo17.asm.bp.hap1.p_ctg.fasta ../B73_Mo17.asm.bp.hap2.p_ctg.fasta BM
 
+##RagTag将基因组锚定至染色体上
+#ragtag.py correct /data3/kongqq/B73_Mo17/Zm-B73-REFERENCE-NAM-5.0.fa /data3/kongqq/B73_Mo17.hifiasm_data/typical_hifiasm/B73_Mo17.asm.bp.hap2.p_ctg.fasta -t 40 2> correct.log && echo "--correct done--" &&
+#	ragtag.py scaffold /data3/kongqq/B73_Mo17/Zm-B73-REFERENCE-NAM-5.0.fa ./ragtag_output/ragtag.correct.fasta  -t 40 2> scaffold.log && echo "--scaffold done--" &&
